@@ -125,9 +125,9 @@ const ClaimDetailPage = () => {
             canView = true; // Claimant can view their own
         }
 
-        if (!canView) {
-            content = <Alert variant="danger">You do not have permission to view this claim's details.</Alert>;
-        } else {
+        // if (!canView) {
+        //     content = <Alert variant="danger">You do not have permission to view this claim's details.</Alert>;
+        // } else {
             // User is authorized to view, proceed with rendering
             const claimantDocuments = claim.documents?.filter(doc => !doc.is_review_document) || [];
             const reviewerDocuments = claim.documents?.filter(doc => doc.is_review_document) || [];
@@ -260,7 +260,7 @@ const ClaimDetailPage = () => {
                     )}
                 </Row>
             );
-        } // End if (canView)
+        // } // End if (canView)
     } else { // Fallback if not loading, not success, or no claim object
         content = <Alert variant="warning">Claim details could not be loaded or the claim was not found.</Alert>;
     }
