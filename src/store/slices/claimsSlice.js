@@ -4,31 +4,29 @@ import axios from 'axios'; // Ensure Axios is imported
 
 // --- Configuration ---
 // Use environment variable for API base URL, fallback for local dev
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'; // Adjust port/URL as needed
 
 // Define base URLs per role/area for clarity
 const CLAIMANT_API = `${API_BASE_URL}/claimant`;
 const REVIEWER_API = `${API_BASE_URL}/reviewer`;
 const CHECKER_API = `${API_BASE_URL}/checker`;
-// Auth lives at base API level
-const AUTH_API = `${API_BASE_URL}/auth`;
 
 // --- Define action URLs using template literals ---
 // Claimant
-const GET_CLAIMANT_CLAIMS_URL = (userId) => `${CLAIMANT_API}/claims/${userId}`;
+const GET_CLAIMANT_CLAIMS_URL = () => `${CLAIMANT_API}/claims`;
 const CREATE_CLAIMANT_CLAIM_URL = () => `${CLAIMANT_API}/claims`;
-const GET_CLAIMANT_CLAIM_BY_ID_URL = (claimId, userId) => `${CLAIMANT_API}/claims/${claimId}/${userId}`;
+const GET_CLAIMANT_CLAIM_BY_ID_URL = (claimId) => `${CLAIMANT_API}/claims/${claimId}`;
 
 // Reviewer
 const GET_REVIEWER_CLAIMS_URL = () => `${REVIEWER_API}/claims`;
-const GET_REVIEWER_CLAIM_BY_ID_URL = (claimId) => `${REVIEWER_API}/claims/${claimId}`;
+const GET_REVIEWER_CLAIM_BY_ID_URL = (claimId, userId) => `${REVIEWER_API}/claims/${claimId}/${userId}`;
 const SUBMIT_FOR_APPROVAL_URL = (claimId) => `${REVIEWER_API}/claims/${claimId}/submit-for-approval`;
 
 // Checker
 const GET_CHECKER_CLAIMS_URL = () => `${CHECKER_API}/claims`;
 const GET_CHECKER_CLAIM_BY_ID_URL = (claimId) => `${CHECKER_API}/claims/${claimId}`;
 const ASSIGN_CLAIM_URL = (claimId) => `${CHECKER_API}/claims/${claimId}/assign`;
-const APPROVE_CLAIM_URL = (claimId, approverId) => `${CHECKER_API}/claims/${claimId}/approve/${approverId}`;
+const APPROVE_CLAIM_URL = (claimId) => `${CHECKER_API}/claims/${claimId}/approve`;
 const DENY_CLAIM_URL = (claimId) => `${CHECKER_API}/claims/${claimId}/deny`;
 const FETCH_REVIEWERS_URL = () => `${CHECKER_API}/users?role=reviewer`; // Assuming Checker fetches reviewers
 
@@ -56,14 +54,13 @@ const handleApiError = (error, defaultMessage = 'An error occurred.') => {
 
 // --- Async Thunks ---
 
-// Fetch claims for Claimant
+// Fetch claims specifically for the claimant view
 export const fetchClaimantClaims = createAsyncThunk(
     'claims/fetchClaimantClaims',
     async (_, { rejectWithValue }) => {
         try {
-            const userId = localStorage.getItem('userId');
-            console.log('Fetching claimant claims for userId:', userId);
-            const response = await axios.get(GET_CLAIMANT_CLAIMS_URL(userId));
+            const response = await axios.get(GET_CLAIMANT_CLAIMS_URL());
+            // Adjust based on expected response structure (e.g., response.data.data)
             return response.data?.data ?? [];
         } catch (error) {
             return rejectWithValue(handleApiError(error, 'Failed to fetch your claims.'));
@@ -71,12 +68,13 @@ export const fetchClaimantClaims = createAsyncThunk(
     }
 );
 
-// Fetch claims for Reviewer (assigned claims)
+// Fetch claims specifically for the reviewer view (assigned claims)
 export const fetchReviewerClaims = createAsyncThunk(
     'claims/fetchReviewerClaims',
     async (_, { rejectWithValue }) => {
         try {
             const response = await axios.get(GET_REVIEWER_CLAIMS_URL());
+            // Adjust based on expected response structure
             return response.data?.data ?? [];
         } catch (error) {
             return rejectWithValue(handleApiError(error, 'Failed to fetch assigned claims.'));
@@ -84,12 +82,13 @@ export const fetchReviewerClaims = createAsyncThunk(
     }
 );
 
-// Fetch claims for Checker (all or filtered)
+// Fetch claims specifically for the checker view (all or filtered)
 export const fetchCheckerClaims = createAsyncThunk(
     'claims/fetchCheckerClaims',
-    async (filters = {}, { rejectWithValue }) => {
+    async (filters = {}, { rejectWithValue }) => { // Optional filters (e.g., { status: 'Pending Approval' })
         try {
             const response = await axios.get(GET_CHECKER_CLAIMS_URL(), { params: filters });
+            // Adjust based on expected response structure
             return response.data?.data ?? [];
         } catch (error) {
             return rejectWithValue(handleApiError(error, 'Failed to fetch claims for checker view.'));
@@ -97,23 +96,24 @@ export const fetchCheckerClaims = createAsyncThunk(
     }
 );
 
-// Fetch single claim details - role determines endpoint, backend authorizes access
+// Generic/shared function to fetch details, relies on backend authorization per endpoint
 export const fetchClaimById = createAsyncThunk(
     'claims/fetchClaimById',
     async ({ claimId, role }, { rejectWithValue }) => {
         let url;
-        let userId = localStorage.getItem('userId');
+        let userId = localStorage.getItem('userId'); // Get user ID from local storage
         switch(role) {
-            case 'reviewer': url = GET_REVIEWER_CLAIM_BY_ID_URL(claimId); break;
+            case 'reviewer': url = GET_REVIEWER_CLAIM_BY_ID_URL(claimId, userId); break;
             case 'checker': url = GET_CHECKER_CLAIM_BY_ID_URL(claimId); break;
-            default: url = GET_CLAIMANT_CLAIM_BY_ID_URL(claimId, userId); break; // Default to claimant
+            // case 'claimant': // Explicitly handle claimant if needed
+            default: url = GET_CLAIMANT_CLAIM_BY_ID_URL(claimId); break;
         }
         try {
             const response = await axios.get(url);
-            // ResourceController usually returns single item directly, not nested in 'data'
             return response.data;
         } catch (error) {
-            return rejectWithValue(handleApiError(error, `Failed to fetch details for claim ${claimId}.`));
+            // If error is 404, it could be not found OR not authorized for that role's endpoint
+            return rejectWithValue(handleApiError(error, `Failed to fetch details for claim ${claimId}. Check permissions or ID.`));
         }
     }
 );
@@ -123,12 +123,11 @@ export const submitClaim = createAsyncThunk(
     'claims/submitClaim',
     async (formData, { rejectWithValue }) => {
         try {
-            // add the user id to the form data
-            const userId = localStorage.getItem('userId');
-            formData.append('user_id', userId);
+            // Axios automatically sets multipart/form-data header for FormData
             const response = await axios.post(CREATE_CLAIMANT_CLAIM_URL(), formData);
             if (response.status === 201 || response.status === 200) { // 201 Created is standard
-                return response.data?.data ?? response.data; // Check if ResourceController nests created resource
+                // ResourceController create often returns the created object directly
+                return response.data;
             } else {
                 return rejectWithValue(`Unexpected status: ${response.status}`);
             }
@@ -144,7 +143,8 @@ export const fetchReviewers = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const response = await axios.get(FETCH_REVIEWERS_URL());
-            return response.data?.data ?? []; // Assuming data is in 'data' key
+            // Adjust based on API structure (e.g., response.data.data)
+            return response.data?.data ?? [];
         } catch (error) {
             return rejectWithValue(handleApiError(error, 'Failed to fetch reviewers.'));
         }
@@ -158,7 +158,8 @@ export const assignClaim = createAsyncThunk(
         try {
             const payload = { reviewer_id: reviewerId }; // Backend expected payload
             const response = await axios.patch(ASSIGN_CLAIM_URL(claimId), payload);
-            return response.data?.data ?? response.data; // Return updated claim
+            // Assume PATCH update returns the updated resource directly
+            return response.data;
         } catch (error) {
             return rejectWithValue(handleApiError(error, 'Failed to assign claim.'));
         }
@@ -168,12 +169,15 @@ export const assignClaim = createAsyncThunk(
 // Submit claim for approval (Reviewer action) - Expects FormData
 export const submitForApproval = createAsyncThunk(
     'claims/submitForApproval',
+    // Payload: { claimId: string|number, formData: FormData }
     async ({ claimId, formData }, { rejectWithValue }) => {
         try {
-            const userId = localStorage.getItem('userId');
-            formData.append('user_id', userId);
+            console.log(`Submitting claim ${claimId} for approval via FormData.`);
+            // Use PATCH (adjust if backend uses POST/PUT)
             const response = await axios.patch(SUBMIT_FOR_APPROVAL_URL(claimId), formData);
-            return response.data?.data ?? response.data; // Return updated claim
+            console.log(`Submit For Approval ${claimId} Response:`, response.data);
+            // Assume PATCH returns updated resource directly
+            return response.data;
         } catch (error) {
             return rejectWithValue(handleApiError(error, 'Failed to submit claim for approval.'));
         }
@@ -185,9 +189,9 @@ export const approveClaimAction = createAsyncThunk(
     'claims/approveClaim',
     async (claimId, { rejectWithValue }) => {
         try {
-            const userId = localStorage.getItem('userId');
-            const response = await axios.patch(APPROVE_CLAIM_URL(claimId, userId), {});
-            return response.data?.data ?? response.data; // Return updated claim
+            const response = await axios.patch(APPROVE_CLAIM_URL(claimId), {});
+            // Assume PATCH returns updated resource directly
+            return response.data;
         } catch (error) {
             return rejectWithValue(handleApiError(error, 'Failed to approve claim.'));
         }
@@ -201,7 +205,8 @@ export const denyClaimAction = createAsyncThunk(
         try {
             const payload = reason ? { denial_reason: reason } : {};
             const response = await axios.patch(DENY_CLAIM_URL(claimId), payload);
-            return response.data?.data ?? response.data; // Return updated claim
+            // Assume PATCH returns updated resource directly
+            return response.data;
         } catch (error) {
             return rejectWithValue(handleApiError(error, 'Failed to deny claim.'));
         }
@@ -210,7 +215,7 @@ export const denyClaimAction = createAsyncThunk(
 
 // --- Initial State ---
 const initialState = {
-    claims: [],                    // Holds the list of claims fetched based on context (claimant's, reviewer's assigned, checker's all/filtered)
+    claims: [],                    // Holds the list of claims fetched based on context
     currentClaim: null,            // Holds single claim details when viewing
     reviewers: [],                 // List of available reviewers (fetched by checker)
     // Status/Error pairs for distinct asynchronous operations
@@ -250,87 +255,73 @@ const claimsSlice = createSlice({
     name: 'claims',
     initialState,
     reducers: {
-        clearCurrentClaim: (state) => { state.currentClaim = null; state.detailStatus = 'idle'; state.detailError = null; },
+        // --- Synchronous Actions ---
+        clearCurrentClaim: (state) => {
+            state.currentClaim = null;
+            state.detailStatus = 'idle';
+            state.detailError = null;
+        },
         resetSubmitStatus: (state) => { state.submitStatus = 'idle'; state.submitError = null; },
         resetAssignStatus: (state) => { state.assignStatus = 'idle'; state.assignError = null; },
         resetSubmitApprovalStatus: (state) => { state.submitApprovalStatus = 'idle'; state.submitApprovalError = null; },
         resetFinalActionStatus: (state) => { state.finalActionStatus = 'idle'; state.finalActionError = null; },
-        clearListError: (state) => { state.listError = null; state.listStatus = 'idle'; } // Allow refetching list
+        clearListError: (state) => { state.listError = null; state.listStatus = 'idle'; }
     },
     extraReducers: (builder) => {
-        // Generic handlers for list fetching thunks
         const handleListPending = (state) => { state.listStatus = 'loading'; state.listError = null; };
-        const handleListFulfilled = (state, action) => { state.listStatus = 'succeeded'; state.claims = action.payload; }; // Overwrites list with fetched data
+        const handleListFulfilled = (state, action) => { state.listStatus = 'succeeded'; state.claims = action.payload; };
         const handleListRejected = (state, action) => { state.listStatus = 'failed'; state.listError = action.payload; };
 
-        // Generic handler for actions that return an updated claim object
         const handleUpdateFulfilled = (state, action) => {
-            state.claims = updateOrAddClaimInList(state.claims, action.payload); // Update item in the list
-            if (state.currentClaim?.id === action.payload?.id) { // Update details view if open
+            if (!action.payload) return;
+            state.claims = updateOrAddClaimInList(state.claims, action.payload);
+            if (state.currentClaim?.id === action.payload?.id) {
                 state.currentClaim = { ...state.currentClaim, ...action.payload };
             }
         };
 
         builder
-            // List Fetching
             .addCase(fetchClaimantClaims.pending, handleListPending).addCase(fetchClaimantClaims.fulfilled, handleListFulfilled).addCase(fetchClaimantClaims.rejected, handleListRejected)
             .addCase(fetchReviewerClaims.pending, handleListPending).addCase(fetchReviewerClaims.fulfilled, handleListFulfilled).addCase(fetchReviewerClaims.rejected, handleListRejected)
             .addCase(fetchCheckerClaims.pending, handleListPending).addCase(fetchCheckerClaims.fulfilled, handleListFulfilled).addCase(fetchCheckerClaims.rejected, handleListRejected)
 
-            // Detail Fetching
             .addCase(fetchClaimById.pending, (state) => { state.detailStatus = 'loading'; state.currentClaim = null; state.detailError = null; })
-            .addCase(fetchClaimById.fulfilled, (state, action) => { state.detailStatus = 'succeeded'; state.currentClaim = action.payload; })
-            .addCase(fetchClaimById.rejected, (state, action) => { state.detailStatus = 'failed'; state.detailError = action.payload; })
+            .addCase(fetchClaimById.fulfilled, (state, action) => {
+                state.detailStatus = 'succeeded';
+                state.currentClaim = action.payload.data ?? null;
+                state.detailError = null;
+            })
+            .addCase(fetchClaimById.rejected, (state, action) => { state.detailStatus = 'failed'; state.detailError = action.payload; state.currentClaim = null; })
 
-            // Submit New Claim
             .addCase(submitClaim.pending, (state) => { state.submitStatus = 'loading'; state.submitError = null; })
             .addCase(submitClaim.fulfilled, (state, action) => {
                 state.submitStatus = 'succeeded';
-                state.claims.push(action.payload); // Add the NEW claim to the current list view
+                if (action.payload) { state.claims.push(action.payload); }
             })
             .addCase(submitClaim.rejected, (state, action) => { state.submitStatus = 'failed'; state.submitError = action.payload; })
 
-            // Fetch Reviewers
             .addCase(fetchReviewers.pending, (state) => { state.fetchReviewersStatus = 'loading'; state.fetchReviewersError = null; })
             .addCase(fetchReviewers.fulfilled, (state, action) => { state.fetchReviewersStatus = 'succeeded'; state.reviewers = action.payload; })
             .addCase(fetchReviewers.rejected, (state, action) => { state.fetchReviewersStatus = 'failed'; state.fetchReviewersError = action.payload; })
 
-            // Assign Claim
             .addCase(assignClaim.pending, (state) => { state.assignStatus = 'loading'; state.assignError = null; })
-            .addCase(assignClaim.fulfilled, (state, action) => { state.assignStatus = 'succeeded'; handleUpdateFulfilled(state, action); })
+            .addCase(assignClaim.fulfilled, (state, action) => { state.assignStatus = 'succeeded'; handleUpdateFulfilled(state, action); }) // Update state with returned claim
             .addCase(assignClaim.rejected, (state, action) => { state.assignStatus = 'failed'; state.assignError = action.payload; })
 
-            // Submit For Approval
             .addCase(submitForApproval.pending, (state) => { state.submitApprovalStatus = 'loading'; state.submitApprovalError = null; })
-            .addCase(submitForApproval.fulfilled, (state, action) => { state.submitApprovalStatus = 'succeeded'; handleUpdateFulfilled(state, action); })
+            .addCase(submitForApproval.fulfilled, (state, action) => { state.submitApprovalStatus = 'succeeded'; handleUpdateFulfilled(state, action); }) // Update state with returned claim
             .addCase(submitForApproval.rejected, (state, action) => { state.submitApprovalStatus = 'failed'; state.submitApprovalError = action.payload; })
 
-            // Approve Claim
             .addCase(approveClaimAction.pending, (state) => { state.finalActionStatus = 'loading'; state.finalActionError = null; })
-            .addCase(approveClaimAction.fulfilled, (state, action) => { state.finalActionStatus = 'succeeded'; handleUpdateFulfilled(state, action); })
+            .addCase(approveClaimAction.fulfilled, (state, action) => { state.finalActionStatus = 'succeeded'; handleUpdateFulfilled(state, action); }) // Update state with returned claim
             .addCase(approveClaimAction.rejected, (state, action) => { state.finalActionStatus = 'failed'; state.finalActionError = action.payload; })
 
-            // Deny Claim
             .addCase(denyClaimAction.pending, (state) => { state.finalActionStatus = 'loading'; state.finalActionError = null; })
-            .addCase(denyClaimAction.fulfilled, (state, action) => { state.finalActionStatus = 'succeeded'; handleUpdateFulfilled(state, action); })
+            .addCase(denyClaimAction.fulfilled, (state, action) => { state.finalActionStatus = 'succeeded'; handleUpdateFulfilled(state, action); }) // Update state with returned claim
             .addCase(denyClaimAction.rejected, (state, action) => { state.finalActionStatus = 'failed'; state.finalActionError = action.payload; });
     },
 });
 
-// --- Exports ---
-// // Export Thunks
-// export {
-//     fetchClaimantClaims,
-//     fetchReviewerClaims,
-//     fetchCheckerClaims,
-//     fetchClaimById,
-//     submitClaim,
-//     fetchReviewers,
-//     assignClaim,
-//     submitForApproval,
-//     approveClaimAction,
-//     denyClaimAction
-// };
 // Export Actions (Reducers)
 export const {
     clearCurrentClaim,
