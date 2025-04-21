@@ -57,6 +57,7 @@ const ActiveClaimHighlight = ({ claim }) => (
 );
 
 const DashboardPage = () => {
+    console.log('DashboardPage rendering');
     const dispatch = useDispatch();
     const userRole = useSelector(selectUserRole);
     const currentUser = useSelector((state) => state.auth.user);

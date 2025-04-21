@@ -42,11 +42,12 @@ const ReviewClaimsPage = () => {
     } else if (listStatus === 'succeeded') {
         // Optional: Frontend filter (Backend should ideally do this based on assigned_reviewer_id and status)
         // Adjust filter as needed, e.g., only show 'Under Review' or 'Pending' if assigned but not yet actioned
-        const claimsToShow = assignedClaims.filter(c => ['Under Review', 'Pending'].includes(c.status));
+        const claimsToShow = assignedClaims;
+        const pendingActionClaims = assignedClaims.filter(c => ['Under Review', 'Pending'].includes(c.status));
 
 
         content = (
-            claimsToShow.length === 0 ? <Alert variant="info">No claims currently require your review.</Alert> : (
+            claimsToShow.length === 0 ? <Alert variant="warning">No claims assigned to you</Alert> : (
                 <Table striped bordered hover responsive size="sm">
                     <thead><tr><th>ID</th><th>Type</th><th>Submitted</th><th>Status</th><th>Claimant</th><th>Actions</th></tr></thead>
                     <tbody>

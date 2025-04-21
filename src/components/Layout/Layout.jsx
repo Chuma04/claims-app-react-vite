@@ -46,19 +46,17 @@ const Layout = ({ children }) => {
 
     return (
         // The wrapper div might be needed if applying classes directly to body is problematic
-        // <div className={layoutClasses}>
-        <> {/* Using Fragment as we apply classes to body */}
+        <div className={layoutClasses}>
+        <>
             <Header onToggleSidebar={toggleSidebar} />
             <Sidebar isSidebarMini={isSidebarMini} />
             {/* ========== MAIN CONTENT ========== */}
             <main id="content" role="main" className="main">
-                {/* Children will be the routed page component */}
                 {children}
             </main>
-            {/* ========== END MAIN CONTENT ========== */}
             <Footer />
         </>
-        // </div>
+        </div>
     );
 };
 
