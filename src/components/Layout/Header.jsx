@@ -4,8 +4,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { LinkContainer } from 'react-router-bootstrap';
-import kualaLogo from '../../assets/img/logos/kualalogo.png';
-import kualaLogoMini from '../../assets/img/logos/kualaMini.png';
+import kualaLogo from '/src/assets/img/logos/kualalogo.png';
+import kualaLogoMini from '/src/assets/img/logos/kualaMini.png';
 
 const Header = ({ onToggleSidebar, sidebarCollapsed }) => {
     const dispatch = useDispatch();
