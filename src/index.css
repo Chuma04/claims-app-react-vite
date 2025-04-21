@@ -66,3 +66,34 @@
 /*    background-color: #f9f9f9;*/
 /*  }*/
 /*}*/
+
+.checker-actions-behind-modal {
+    z-index: 1000;
+}
+
+.document-list .list-group-item {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+.document-list .file-name {
+    min-width: 150px;
+    flex-grow: 1;
+}
+
+.btn-icon {
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+}
+
+.modal-body iframe {
+    display: block;
+}
+
+
+.btn-primary {
+    background: #0051AA !important;
+}
+
+.text-primary, .text-primary.card-title {
+    color: #0051AA !important;
+}
