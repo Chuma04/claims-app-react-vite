@@ -158,7 +158,7 @@ const DashboardPage = () => {
                         <Col md={4}><DashboardStatCard title="Pending Reviewer Assignment" value={dashboardStats.pendingAssignmentCount} variant="secondary" icon="bi bi-person-plus" /></Col>
                         <Col md={4}><DashboardStatCard title="Total Claims (Visible)" value={dashboardStats.total} variant="light" icon="bi bi-database" /></Col>
                     </Row>
-                    <Alert variant="info">Your primary actions are on the "Admin / Final Check" page.</Alert>
+                    <Alert variant="info">Your primary actions are on the "Claims Management" page.</Alert>
                 </>
             );
         }
@@ -171,7 +171,7 @@ const DashboardPage = () => {
 
     return (
         <>
-            <div className="page-header pt-3 pb-2 mb-3 border-bottom">
+            <div className="page-header pt-3 pb-2 px-5 mb-3 border-bottom">
                 <h1 className="page-header-title">Dashboard {currentUser?.name ? `- Welcome, ${currentUser.name}!` : ''}</h1>
             </div>
             <Container fluid className="pt-3">

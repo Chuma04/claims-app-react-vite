@@ -12,18 +12,17 @@ import DashboardPage from './pages/DashboardPage';
 import ClaimsHistoryPage from './pages/ClaimsHistoryPage';
 import SubmitClaimPage from './pages/SubmitClaimPage';
 import ClaimStatusPage from './pages/ClaimStatusPage';
-import ClaimDetailPage from './pages/ClaimDetailPage'; // Generic detail viewer
+import ClaimDetailPage from './pages/ClaimDetailPage';
 // Reviewer Pages
 import ReviewClaimsPage from "./pages/ReviewClaimsPage.jsx";
 import ReviewClaimDetailPage from "./pages/ReviewClaimDetailPage.jsx";
 // Checker Pages
-import AllClaimsPage from "./pages/AllClaimsPage.jsx"; // Checker's main claims view
+import AllClaimsPage from "./pages/AllClaimsPage.jsx";
 import UserManagementPage from './pages/UserManagementPage.jsx';
 // Other Shared Pages
 import LoginPage from './pages/LoginPage';
 import ForbiddenPage from './pages/ForbiddenPage';
 
-// Define Roles (ensure consistency)
 const ROLES = {
     CLAIMANT: 'claimant',
     MAKER: 'reviewer',

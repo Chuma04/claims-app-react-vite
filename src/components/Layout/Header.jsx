@@ -4,6 +4,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { LinkContainer } from 'react-router-bootstrap';
+import kualaLogo from '../../assets/img/logos/kualalogo.png';
+import kualaLogoMini from '../../assets/img/logos/kualaMini.png';
 
 const Header = ({ onToggleSidebar, sidebarCollapsed }) => {
     const dispatch = useDispatch();
@@ -43,8 +45,8 @@ const Header = ({ onToggleSidebar, sidebarCollapsed }) => {
                 <div className="d-flex align-items-center me-auto">
                     {/* Logo */}
                     <Navbar.Brand as={Link} to="/" aria-label="Front" className="me-3">
-                        <Image className="navbar-brand-logo" src="./assets/img/logos/kualalogo.jpg" alt="Logo" />
-                        <Image className="navbar-brand-logo-mini" src="/assets/svg/logos/logo-short.svg" alt="Mini Logo" style={{ display: 'none' }}/>
+                        <Image className="navbar-brand-logo" src={kualaLogo} alt="Logo" />
+                        <Image className="navbar-brand-logo-mini" src={kualaLogoMini} alt="Mini Logo" style={{ display: 'none' }}/>
                     </Navbar.Brand>
 
                     {isAuthenticated && location.pathname !== '/login' && location.pathname !== '/forbidden' && (
